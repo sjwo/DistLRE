@@ -32,7 +32,7 @@ class RemoteExecutor:
 
 class SshWorker(Thread):
     def __init__(self, host, task_queue):
-        super(SshWorker, self).__init__()
+        super().__init__()
         self.task_queue = task_queue
         self.host = host
 
