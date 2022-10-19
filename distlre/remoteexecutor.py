@@ -5,6 +5,7 @@ from subprocess import Popen, PIPE, run
 import time
 import getpass
 
+import logging
 
 class RemoteExecutor:
     def __init__(self, task_queue, hosts):
@@ -15,14 +16,18 @@ class RemoteExecutor:
 
     def initialize_workers(self):
         self.workers = [SshWorker(host, self.task_queue) for host in self.hosts]
+        logging.debug(f"initialized workers:\n{[x.host.hostname for x in self.workers]}")
 
     def start(self):
         for worker in self.workers:
             worker.start()
+            logging.debug(f"started worker {worker.host.hostname}")
 
     def wait(self):
         for worker in self.workers:
+            logging.debug(f"waiting for {worker.host.hostname}")
             worker.join()
+            logging.debug(f"joined {worker.host.hostname}")
 
 
 class SshWorker(Thread):
@@ -56,7 +61,7 @@ def execute_remote_task(host, internal_task):
             host.username = getpass.getuser()
 
         auth = host.username + "@" + host.hostname + " -p " + str(host.port)
-
+        logging.debug("going to Popen: " + "exec ssh " + auth + " " + task.command)
         process = Popen("exec ssh " + auth + " " + task.command,
                         stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
 
@@ -72,6 +77,7 @@ def execute_remote_task(host, internal_task):
             mem_output = mem_stdout.decode('utf-8')
 
             mem_used = int(mem_output)
+            logging.debug(f"mem_used: {mem_used}")
 
             mem_proc.stdout.close()
             if mem_used >= task_memory_limit:
@@ -85,8 +91,12 @@ def execute_remote_task(host, internal_task):
 
         process.wait()
 
-        if process.returncode == 0:
-            task.output = b''.join(process.stdout.readlines())
+        # if process.returncode == 0:
+        #     task.output = b''.join(process.stdout.readlines())
+        logging.debug(f"procces return code: {process.returncode}")
+        task.output = b''.join(process.stdout.readlines())
+        logging.debug("task output:")
+        logging.debug(task.output)
 
         task.error = b''.join(process.stderr.readlines())
 

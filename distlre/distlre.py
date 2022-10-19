@@ -1,5 +1,6 @@
 from concurrent.futures import Future
 from queue import Queue
+import logging
 
 
 class Task:
@@ -56,14 +57,18 @@ class DistLRE:
 
     def execute_tasks(self):
         if self.local_executor:
+            logging.info("starting local executor")
             self.local_executor.start()
 
         if self.remote_executor is not None:
+            logging.info("starting remote executor")
             self.remote_executor.start()
 
     def wait(self):
         if self.local_executor is not None:
+            logging.info("waiting on local executor")
             self.local_executor.wait()
 
         if self.remote_executor is not None:
+            logging.info("waiting on remote executor")
             self.remote_executor.wait()
